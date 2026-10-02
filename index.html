@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#111214">
+    <title>Віджимання: Тренер</title>
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="https://placehold.co/180x180/C3F53C/000000.png?text=Push">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://placehold.co/32x32/C3F53C/000000.png?text=Push">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        app: {
+                            bg: '#111214',       
+                            card: '#1C1D21',     
+                            text: '#FFFFFF',     
+                            muted: '#8E8E93',    
+                            border: '#2C2D31',   
+                            primary: '#C4F042',  
+                            primaryHover: '#B2E020',
+                            darkGreen: '#1E2612', 
+                            red: '#FF453A'       
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 4px 20px rgba(0, 0, 0, 0.4)',
+                        'float': '0 8px 30px rgba(196, 240, 66, 0.15)',
+                        'glow': '0 0 15px rgba(196, 240, 66, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; 
+            color: #FFFFFF;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .view-screen {
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(20px);
+            background-color: #111214;
+        }
+        .view-screen.active {
+            pointer-events: auto;
+            opacity: 1;
+            transform: translateX(0);
+            z-index: 10;
+        }
+
+        :root {
+            --safe-top: max(48px, env(safe-area-inset-top));
+            --safe-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            --nav-height: 72px; 
+        }
+
+        .progress-bar-fill {
+            transition: width 0.5s ease-out;
+        }
+        
+        .timer-circle {
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        input[type="number"] {
+            color: #FFFFFF;
+            caret-color: #C4F042;
+        }
+        input[type="number"]::placeholder {
+            color: #555555;
+        }
+    </style>
+</head>
+<body class="w-full min-h-screen flex items-center justify-center sm:p-4 text-app-text">
+
+    <!-- Головне шасі -->
+    <div id="app-chassis" class="w-full max-w-[430px] h-[100dvh] sm:h-[860px] sm:rounded-[40px] bg-app-bg relative overflow-hidden flex flex-col shadow-2xl border border-white/10">
+        
+        <div id="view-onboarding" class="view-screen bg-app-bg z-50">
+            <div class="absolute inset-0 z-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center"></div>
+            <div class="absolute inset-0 z-0 bg-gradient-to-t from-app-bg via-app-bg/80 to-transparent"></div>
+
+            <div class="flex-1 flex flex-col items-center justify-end p-8 text-center pb-12 z-10">
+                <div class="w-full flex items-center justify-center gap-2 mb-auto pt-[var(--safe-top)]">
+                    <svg class="w-6 h-6 text-app-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13.5h-13L12 6.5z"/></svg>
+                    <span class="text-[14px] font-bold tracking-widest uppercase text-white">PushUp Club</span>
+                </div>
+
+                <div id="onboarding-step-1" class="w-full">
+                    <h1 class="text-[38px] font-black tracking-tighter leading-none text-left uppercase mb-4 text-white">
+                        СИЛЬНІШИЙ<br><span class="text-app-primary">КОЖНОГО ДНЯ</span>
+                    </h1>
+                    <p class="text-[15px] text-gray-300 text-left mb-10">Твій персональний тренер побудує план на основі твоїх реальних можливостей.</p>
+                    
+                    <div class="bg-app-card/80 backdrop-blur-md p-6 rounded-[24px] border border-white/10 mb-6">
+                        <h2 class="text-[15px] font-medium text-app-muted mb-4 text-left">Скільки віджимань ти зробиш зараз?</h2>
+                        <input type="number" id="onboard-max-input" placeholder="Наприклад: 15" class="w-full h-14 bg-app-bg rounded-xl text-center text-[24px] font-bold mb-4 border border-app-border focus:outline-none focus:border-app-primary transition-colors" inputmode="numeric">
+                        <button onclick="takeTest()" class="w-full h-12 text-app-primary font-medium text-[14px] mb-2 flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Або пройти тест зараз
+                        </button>
+                    </div>
+
+                    <button onclick="nextOnboardingStep()" class="w-full h-16 bg-app-primary text-black rounded-full font-bold text-[18px] active:scale-95 transition-transform flex items-center justify-between px-2">
+                        <div class="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center text-black">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </div>
+                        <span>Далі</span>
+                        <div class="w-12 h-12 flex items-center justify-center text-black">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                        </div>
+                    </button>
+                </div>
+
+                <div id="onboarding-step-2" class="w-full hidden">
+                    <h1 class="text-[36px] font-black tracking-tighter leading-none text-left uppercase mb-4 text-white">
+                        ВСТАНОВИ<br><span class="text-app-primary">СВОЮ ЦІЛЬ</span>
+                    </h1>
+                    <div class="bg-app-card/80 backdrop-blur-md p-6 rounded-[24px] border border-white/10 mb-8 mt-8">
+                        <h2 class="text-[15px] font-medium text-app-muted mb-4 text-left">Яка твоя глобальна ціль? (разів)</h2>
+                        <input type="number" id="onboard-goal-input" placeholder="Наприклад: 50" class="w-full h-14 bg-app-bg rounded-xl text-center text-[24px] font-bold border border-app-border focus:outline-none focus:border-app-primary transition-colors" inputmode="numeric">
+                    </div>
+                    <button onclick="finishOnboarding()" class="w-full h-16 bg-app-primary text-black rounded-full font-bold text-[18px] active:scale-95 transition-transform">Почати тренування</button>
+                </div>
+                
+                <!-- Тест в реальному часі -->
+                <div id="onboarding-test" class="w-full hidden flex-col items-center bg-app-bg absolute inset-0 z-20 justify-center p-8 pt-[var(--safe-top)]">
+                    <h2 class="text-[24px] font-bold mb-2 uppercase tracking-wide text-white">Перевір свій ліміт</h2>
+                    <p class="text-[14px] text-app-muted mb-12 text-center">Рівна спина, повна амплітуда. Тисни кнопку після кожного разу.</p>
+                    <div class="text-[100px] font-black leading-none mb-12 text-app-primary" id="test-counter">0</div>
+                    <button onclick="incrementTest()" class="w-40 h-40 bg-app-card border border-app-primary/30 text-app-primary rounded-full font-bold text-[48px] shadow-glow active:scale-90 active:bg-app-primary active:text-black transition-all mb-12">+1</button>
+                    <button onclick="finishTest()" class="w-full h-16 bg-white/10 text-white rounded-full font-bold text-[16px] hover:bg-white/20 transition-colors">Завершити тест</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-dashboard" class="view-screen overflow-y-auto scrollbar-hide pb-[calc(var(--nav-height)+var(--safe-bottom)+20px)] bg-app-bg">
+            <div class="px-5 pt-8" style="padding-top: max(32px, var(--safe-top));">
+                <h2 class="text-[28px] font-black uppercase leading-[1.1] tracking-tight mb-6 text-white">
+                    ПРОГРЕС<br><span class="text-app-primary">ПОЧИНАЄТЬСЯ ЗАРАЗ</span>
+                </h2>
+
+                <div class="bg-app-card rounded-[24px] p-6 shadow-card mb-6 border border-white/5 relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[14px] font-bold text-white">Прогрес за тиждень</span>
+                        <button onclick="switchTab('profile')" class="text-[12px] text-app-primary font-medium">Усі</button>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <!-- Круговий прогрес -->
+                        <div class="relative w-[120px] h-[120px] flex items-center justify-center">
+                            <svg class="absolute inset-0 w-full h-full -rotate-90">
+                                <circle cx="60" cy="60" r="50" fill="transparent" stroke="#2C2D31" stroke-width="10"></circle>
+                                <circle id="dash-circular-progress" cx="60" cy="60" r="50" fill="transparent" stroke="#C4F042" stroke-width="10" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" class="timer-circle"></circle>
+                            </svg>
+                            <div class="text-center">
+                                <span class="text-[28px] font-black leading-none block text-white" id="dash-percent">0%</span>
+                                <span class="text-[10px] text-app-muted font-medium uppercase mt-1 block">Виконано</span>
+                            </div>
+                        </div>
+
+                        <!-- Статистика -->
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-[#2a3615] text-app-primary flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-app-muted uppercase font-bold tracking-wider mb-0.5">Макс / Ціль</p>
+                                    <p class="text-[15px] font-bold"><span id="dash-max" class="text-white">0</span> <span class="text-app-muted">/ <span id="dash-goal">0</span></span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-app-border text-white flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-app-muted uppercase font-bold tracking-wider mb-0.5">Залишилось</p>
+                                    <p class="text-[15px] font-bold text-white" id="dash-subtext">0 разів</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-[14px] font-bold text-white mb-3">Швидкі дії</p>
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <button onclick="startWorkout()" class="bg-app-card rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 border border-white/5 active:bg-white/5">
+                        <svg class="w-6 h-6 text-app-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18"></path></svg>
+                        <div class="text-center">
+                            <p class="text-[12px] font-bold text-white">Тренування</p>
+                            <p class="text-[10px] text-app-muted">Огляд</p>
+                        </div>
+                    </button>
+                    <button onclick="switchTab('plan')" class="bg-app-card rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 border border-white/5 active:bg-white/5">
+                        <svg class="w-6 h-6 text-app-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <div class="text-center">
+                            <p class="text-[12px] font-bold text-white">Мій план</p>
+                            <p class="text-[10px] text-app-muted">Дивитись</p>
+                        </div>
+                    </button>
+                    <button onclick="switchTab('profile')" class="bg-app-card rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 border border-white/5 active:bg-white/5">
+                        <svg class="w-6 h-6 text-app-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        <div class="text-center">
+                            <p class="text-[12px] font-bold text-white">Прогрес</p>
+                            <p class="text-[10px] text-app-muted">Графік</p>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-[14px] font-bold text-white" id="today-title">Сьогоднішнє тренування</p>
+                    <button onclick="switchTab('plan')" class="text-[12px] text-app-primary font-medium">Усі</button>
+                </div>
+
+                <div class="bg-app-card rounded-[24px] p-4 shadow-card flex items-center border border-white/5 mb-4" id="today-workout-preview">
+                    <div class="w-[72px] h-[72px] rounded-[16px] bg-app-border overflow-hidden mr-4 relative shrink-0">
+                        <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=200&auto=format&fit=crop" class="w-full h-full object-cover" alt="Workout">
+                        <div class="absolute inset-0 bg-black/20"></div>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <h3 class="text-[15px] font-bold text-white mb-1">Силове тренування</h3>
+                        <p class="text-[12px] text-app-muted mb-2"><span id="today-sets-text" class="text-white">10 · 10 · 8</span> • <span id="today-difficulty">Середній</span></p>
+                        <p class="text-[11px] text-app-muted font-medium">Всього: <span id="today-total-reps" class="text-white">0</span> разів</p>
+                    </div>
+
+                    <button onclick="startWorkout()" class="w-12 h-12 rounded-full bg-app-primary text-black flex items-center justify-center shrink-0 shadow-glow active:scale-95 transition-transform">
+                        <svg class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                </div>
+
+                <!-- Якщо сьогодні відпочинок -->
+                <div id="today-rest-preview" class="hidden bg-app-card rounded-[24px] p-6 shadow-card flex items-center border border-white/5 mb-4">
+                    <div class="w-[64px] h-[64px] rounded-full bg-[#2a3615] text-app-primary flex items-center justify-center mr-4 shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-[16px] font-bold text-white mb-1">День відновлення</h3>
+                        <p class="text-[13px] text-app-muted">М'язи ростуть, коли ти відпочиваєш. Наступне тренування завтра.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-plan" class="view-screen bg-app-bg overflow-y-auto pb-[calc(var(--nav-height)+var(--safe-bottom)+20px)]">
+            <header class="px-6 pb-4 bg-app-bg z-10 sticky top-0 flex items-center justify-center pt-6" style="padding-top: max(24px, var(--safe-top));">
+                <h1 class="text-[20px] font-bold tracking-tight text-white uppercase">Мій розклад</h1>
+            </header>
+            
+            <div class="px-5 mt-2">
+                <h2 class="text-[13px] font-bold text-app-primary mb-4" id="plan-date-header">План на майбутнє</h2>
+                <div class="flex flex-col gap-0" id="plan-container">
+                    <!-- Генерується через JS -->
+                </div>
+            </div>
+        </div>
+
+        <div id="view-workout" class="view-screen bg-app-bg z-20">
+            <div class="flex-1 flex flex-col pt-[var(--safe-top)] pb-[var(--safe-bottom)] px-6">
+                
+                <div class="flex justify-between items-center py-4 mb-4 border-b border-white/5">
+                    <button onclick="cancelWorkout()" class="w-10 h-10 rounded-full bg-app-card flex items-center justify-center text-white border border-app-border">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <span class="text-[16px] font-bold text-white uppercase tracking-wider" id="workout-header-title">ТРЕНУВАННЯ 1</span>
+                    <div class="w-10"></div>
+                </div>
+
+                <div id="workout-do-set" class="flex-1 flex flex-col items-center justify-center text-center">
+                    <div class="mb-8">
+                        <span class="px-4 py-1.5 bg-[#2a3615] text-app-primary border border-app-primary/30 rounded-full text-[12px] font-bold tracking-widest uppercase" id="workout-set-indicator">ПІДХІД 1/4</span>
+                    </div>
+                    
+                    <div class="flex flex-col items-center mb-12 relative">
+                        <div class="absolute inset-0 flex items-center justify-center -z-10 opacity-10">
+                            <svg class="w-64 h-64 text-app-primary" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                        </div>
+                        <span class="text-[140px] leading-[0.8] font-black tracking-tighter text-white" id="workout-reps-target">10</span>
+                        <span class="text-[18px] font-medium text-app-primary mt-6 tracking-widest uppercase">Віджимань</span>
+                    </div>
+
+                    <div class="flex items-center gap-8 mb-auto bg-app-card p-2 rounded-full border border-white/5">
+                        <button onclick="adjustWorkoutReps(-1)" class="w-12 h-12 rounded-full bg-app-border flex items-center justify-center text-white active:bg-white/20">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"></path></svg>
+                        </button>
+                        <span class="text-[12px] font-bold text-app-muted uppercase tracking-wider">Коригувати</span>
+                        <button onclick="adjustWorkoutReps(1)" class="w-12 h-12 rounded-full bg-app-border flex items-center justify-center text-white active:bg-white/20">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                    </div>
+
+                    <button onclick="finishSet()" class="w-full h-16 bg-app-primary text-black rounded-[20px] font-bold text-[18px] active:scale-95 transition-transform mb-4 shadow-glow flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        Завершити підхід
+                    </button>
+                </div>
+
+                <div id="workout-rest" class="hidden flex-1 flex-col items-center justify-center text-center">
+                    <p class="text-[14px] font-bold tracking-widest text-app-primary mb-8 uppercase">Час відпочинку</p>
+                    
+                    <div class="relative w-[240px] h-[240px] flex items-center justify-center mb-8">
+                        <svg class="absolute inset-0 w-full h-full -rotate-90">
+                            <circle cx="120" cy="120" r="110" fill="transparent" stroke="#2C2D31" stroke-width="6"></circle>
+                            <circle id="rest-ring" cx="120" cy="120" r="110" fill="transparent" stroke="#C4F042" stroke-width="6" stroke-linecap="round" stroke-dasharray="691" stroke-dashoffset="0" class="timer-circle shadow-glow"></circle>
+                        </svg>
+                        <span class="text-[64px] font-black leading-none text-white font-mono" id="workout-rest-time">01:30</span>
+                    </div>
+
+                    <div class="mb-auto bg-app-card w-full rounded-2xl py-4 border border-white/5">
+                        <p class="text-[12px] font-bold text-app-muted mb-1 uppercase tracking-wider">Наступний підхід</p>
+                        <p class="text-[28px] font-black text-white" id="workout-next-preview">8 <span class="text-[16px] text-app-primary">разів</span></p>
+                    </div>
+
+                    <div class="flex w-full gap-3 mb-4 mt-6">
+                        <button onclick="addRestTime(30)" class="flex-1 h-14 bg-app-card text-white border border-white/10 rounded-xl font-bold text-[15px] hover:bg-white/5">+30с</button>
+                        <button onclick="skipRest()" class="flex-1 h-14 bg-app-primary text-black rounded-xl font-bold text-[15px] shadow-glow">Пропустити</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-feedback" class="view-screen bg-app-bg z-30">
+            <div class="absolute inset-0 z-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center mix-blend-luminosity"></div>
+            <div class="absolute inset-0 z-0 bg-gradient-to-t from-app-bg via-app-bg/95 to-app-bg/80"></div>
+            
+            <div class="flex-1 flex flex-col pt-[var(--safe-top)] pb-[var(--safe-bottom)] px-6 z-10">
+                <div class="flex-1 flex flex-col items-center justify-center text-center mt-12">
+                    <div class="w-16 h-16 bg-app-primary text-black rounded-full flex items-center justify-center mb-6 shadow-glow">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h1 class="text-[32px] font-black uppercase tracking-tight mb-2 text-white">Тренування<br>завершено!</h1>
+                    
+                    <div class="bg-app-card/50 backdrop-blur-sm border border-white/10 rounded-3xl p-6 mt-6 mb-10 w-full">
+                        <p class="text-[12px] text-app-muted uppercase font-bold tracking-wider mb-1">Загальний об'єм</p>
+                        <div class="flex items-baseline justify-center gap-2">
+                            <p class="text-[56px] font-black text-app-primary leading-none" id="feedback-total-reps">42</p>
+                            <p class="text-[18px] font-bold text-white">разів</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-[16px] font-bold mb-4 text-white">Як пройшло тренування?</h2>
+                    
+                    <div class="w-full flex flex-col gap-3">
+                        <button onclick="submitFeedback('easy')" class="w-full h-14 bg-app-card rounded-xl flex items-center justify-between px-6 active:scale-95 transition-transform border border-white/5 hover:border-app-primary group">
+                            <span class="font-bold text-[15px] text-white group-hover:text-app-primary">Легко (Міг би ще)</span>
+                            <span class="text-[20px]">😎</span>
+                        </button>
+                        <button onclick="submitFeedback('normal')" class="w-full h-14 bg-app-card rounded-xl flex items-center justify-between px-6 active:scale-95 transition-transform border border-white/5 hover:border-app-primary group">
+                            <span class="font-bold text-[15px] text-white group-hover:text-app-primary">Ідеально (В самий раз)</span>
+                            <span class="text-[20px]">👍</span>
+                        </button>
+                        <button onclick="submitFeedback('hard')" class="w-full h-14 bg-app-card rounded-xl flex items-center justify-between px-6 active:scale-95 transition-transform border border-white/5 hover:border-app-primary group">
+                            <span class="font-bold text-[15px] text-white group-hover:text-app-primary">Важко (До відмови)</span>
+                            <span class="text-[20px]">🔥</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-profile" class="view-screen bg-app-bg overflow-y-auto pb-[calc(var(--nav-height)+var(--safe-bottom)+20px)]">
+            <header class="px-6 pb-4 bg-app-bg z-10 sticky top-0 pt-6" style="padding-top: max(24px, var(--safe-top));">
+                <h1 class="text-[24px] font-black uppercase tracking-tight text-white">Профіль</h1>
+            </header>
+
+            <div class="px-5 mt-2">
+                <div class="bg-app-card rounded-[24px] p-6 shadow-card mb-6 grid grid-cols-2 gap-4 border border-white/5 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-app-primary/10 rounded-full blur-2xl"></div>
+
+                    <div>
+                        <p class="text-[11px] text-app-muted uppercase font-bold tracking-wider mb-1">Макс. Рекорд</p>
+                        <p class="text-[28px] font-black text-white" id="stat-record">0</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-app-muted uppercase font-bold tracking-wider mb-1">Глобальна ціль</p>
+                        <p class="text-[28px] font-black text-white" id="stat-goal">0</p>
+                    </div>
+                    <div class="col-span-2 pt-4 border-t border-white/10 mt-2">
+                        <p class="text-[11px] text-app-muted uppercase font-bold tracking-wider mb-1">Всього віджимань</p>
+                        <p class="text-[36px] font-black text-app-primary" id="stat-total">0</p>
+                    </div>
+                </div>
+
+                <button onclick="forceTest()" class="w-full h-14 bg-app-card text-white border border-white/10 rounded-xl font-bold text-[15px] mb-8 hover:bg-white/5 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4 text-app-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Оновити максимум (Тест)
+                </button>
+
+                <h2 class="text-[14px] font-bold text-white px-1 mb-4 uppercase tracking-wider">Історія</h2>
+                <div class="flex flex-col gap-0" id="history-container">
+                    <!-- Заповнюється JS -->
+                </div>
+                
+                <button onclick="confirmReset()" class="mt-8 mb-4 w-full text-app-red font-medium text-[14px] p-4 bg-app-red/10 rounded-xl border border-app-red/20">
+                    Скинути всі дані
+                </button>
+            </div>
+        </div>
+
+        <nav id="bottom-nav" class="absolute bottom-0 w-full bg-app-bg border-t border-white/5 z-40 pt-2 px-6 flex justify-around items-center pb-[var(--safe-bottom)] transition-transform duration-300">
+            <button onclick="switchTab('dashboard')" class="nav-btn flex flex-col items-center justify-center gap-1.5 w-16 text-app-primary" id="nav-dashboard">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span class="text-[10px] font-bold">Головна</span>
+            </button>
+            <button onclick="switchTab('plan')" class="nav-btn flex flex-col items-center justify-center gap-1.5 w-16 text-app-muted" id="nav-plan">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"></path></svg>
+                <span class="text-[10px] font-bold">План</span>
+            </button>
+            <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center justify-center gap-1.5 w-16 text-app-muted" id="nav-profile">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+                <span class="text-[10px] font-bold">Профіль</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        const DEFAULT_STATE = { 
+            onboarded: false,
+            maxPushups: 0,       
+            trainingMax: 0,      
+            goalPushups: 0,      
+            currentDay: 1,       
+            history: [],         
+            restTime: 90         
+        };
+        let appState = {};
+        
+        let currentSets = [];
+        let currentSetIdx = 0;
+        let actualReps = 0;
+        let restInterval = null;
+        let restRemaining = 0;
+        let activeRestBase = 90;
+
+        let testCount = 0;
+
+        function initApp() {
+            const saved = localStorage.getItem('pushupProStateDark');
+            if (saved) {
+                appState = JSON.parse(saved);
+                if(appState.trainingMax === undefined) appState.trainingMax = Math.round(appState.maxPushups * 0.8);
+            } else {
+                appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            }
+
+            if (!appState.onboarded) {
+                showScreen('view-onboarding');
+                document.getElementById('bottom-nav').style.transform = 'translateY(150%)';
+            } else {
+                showScreen('view-dashboard');
+                updateAllUI();
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('pushupProStateDark', JSON.stringify(appState));
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.view-screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function nextOnboardingStep() {
+            const val = parseInt(document.getElementById('onboard-max-input').value);
+            if (val > 0) {
+                appState.maxPushups = val;
+                appState.trainingMax = Math.max(1, Math.round(val * 0.8)); 
+                document.getElementById('onboarding-step-1').classList.add('hidden');
+                document.getElementById('onboarding-step-2').classList.remove('hidden');
+            } else {
+                alert('Будь ласка, введи число.');
+            }
+        }
+
+        function finishOnboarding() {
+            const goal = parseInt(document.getElementById('onboard-goal-input').value);
+            if (goal > appState.maxPushups) {
+                appState.goalPushups = goal;
+                appState.onboarded = true;
+                saveState();
+                document.getElementById('bottom-nav').style.transform = 'translateY(0)';
+                showScreen('view-dashboard');
+                updateAllUI();
+            } else {
+                alert('Ціль має бути більшою за поточний максимум!');
+            }
+        }
+
+        function takeTest() {
+            document.getElementById('onboarding-step-1').classList.add('hidden');
+            document.getElementById('onboarding-step-2').classList.add('hidden');
+            document.getElementById('onboarding-test').classList.remove('hidden');
+            document.getElementById('onboarding-test').classList.add('flex');
+            testCount = 0;
+            document.getElementById('test-counter').innerText = testCount;
+        }
+
+        function forceTest() {
+            document.getElementById('bottom-nav').style.transform = 'translateY(150%)';
+            showScreen('view-onboarding');
+            document.getElementById('onboarding-step-1').classList.add('hidden');
+            document.getElementById('onboarding-step-2').classList.add('hidden');
+            document.getElementById('onboarding-test').classList.remove('hidden');
+            document.getElementById('onboarding-test').classList.add('flex');
+            testCount = 0;
+            document.getElementById('test-counter').innerText = testCount;
+        }
+
+        function incrementTest() {
+            testCount++;
+            document.getElementById('test-counter').innerText = testCount;
+        }
+
+        function finishTest() {
+            if (testCount > 0) {
+                appState.maxPushups = testCount;
+                appState.trainingMax = Math.max(1, Math.round(testCount * 0.8));
+                
+                if(!appState.onboarded) {
+                    document.getElementById('onboarding-test').classList.add('hidden');
+                    document.getElementById('onboarding-test').classList.remove('flex');
+                    document.getElementById('onboarding-step-2').classList.remove('hidden');
+                } else {
+                    if (appState.goalPushups <= appState.maxPushups) {
+                        appState.goalPushups = appState.maxPushups + 20; 
+                    }
+                    saveState();
+                    document.getElementById('bottom-nav').style.transform = 'translateY(0)';
+                    showScreen('view-profile');
+                    updateAllUI();
+                }
+            }
+        }
+
+        function getDayData(dayNumber) {
+            const isRest = (dayNumber % 3 === 0);
+            if (isRest) return { type: 'rest', sets: [], total: 0 };
+
+            let mult = (dayNumber % 2 !== 0) ? 1.0 : 1.15; 
+            let base = appState.trainingMax * mult;
+
+            let sets = [
+                Math.max(1, Math.round(base * 0.7)),
+                Math.max(1, Math.round(base * 0.6)),
+                Math.max(1, Math.round(base * 0.5)),
+                Math.max(1, Math.round(base * 0.5))
+            ];
+            if (mult > 1.0) sets.push(Math.max(1, Math.round(base * 0.6)));
+
+            return { type: 'workout', sets: sets, total: sets.reduce((a,b)=>a+b,0) };
+        }
+
+        function updateAllUI() {
+            updateDashboard();
+            updatePlan();
+            updateProfile();
+        }
+
+        function updateDashboard() {
+            document.getElementById('dash-max').innerText = appState.maxPushups;
+            document.getElementById('dash-goal').innerText = appState.goalPushups;
+            
+            let percent = Math.min(100, Math.round((appState.maxPushups / appState.goalPushups) * 100));
+            document.getElementById('dash-percent').innerText = `${percent}%`;
+            
+            setTimeout(() => {
+                const ring = document.getElementById('dash-circular-progress');
+                if(ring) {
+                    const offset = 314 - (314 * percent / 100);
+                    ring.style.strokeDashoffset = offset;
+                }
+            }, 100);
+
+            let remaining = appState.goalPushups - appState.maxPushups;
+            document.getElementById('dash-subtext').innerText = remaining > 0 ? `${remaining} разів` : 'Ціль досягнута!';
+
+            const todayData = getDayData(appState.currentDay);
+            
+            if (todayData.type === 'workout') {
+                document.getElementById('today-rest-preview').classList.add('hidden');
+                document.getElementById('today-workout-preview').classList.remove('hidden');
+                document.getElementById('today-workout-preview').classList.add('flex');
+                document.getElementById('today-sets-text').innerText = todayData.sets.join(' · ');
+                document.getElementById('today-total-reps').innerText = todayData.total;
+                
+                let diffText = "Середній";
+                if(appState.history.length > 0) {
+                    const lastDiff = appState.history[appState.history.length-1].rpe;
+                    if(lastDiff === 'easy') diffText = "Новачок";
+                    if(lastDiff === 'hard') diffText = "Просунутий";
+                }
+                document.getElementById('today-difficulty').innerText = diffText;
+            } else {
+                document.getElementById('today-workout-preview').classList.add('hidden');
+                document.getElementById('today-workout-preview').classList.remove('flex');
+                document.getElementById('today-rest-preview').classList.remove('hidden');
+                document.getElementById('today-rest-preview').classList.add('flex');
+            }
+        }
+
+        function updatePlan() {
+            const container = document.getElementById('plan-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 7; i++) {
+                let planDay = appState.currentDay + i;
+                let data = getDayData(planDay);
+                
+                let dateObj = new Date();
+                dateObj.setDate(dateObj.getDate() + i);
+                
+                // Локалізація дати
+                let dateStr = i === 0 ? "Сьогодні" : i === 1 ? "Завтра" : dateObj.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' });
+                
+                let timeStr = "08:00";
+                if(i%2!==0) timeStr = "18:30";
+
+                if (data.type === 'workout') {
+                    container.innerHTML += `
+                        <div class="flex items-center py-4 border-b border-white/5 ${i===0 ? 'opacity-100' : 'opacity-70'}">
+                            <div class="w-20 shrink-0">
+                                <p class="text-[13px] font-bold text-white leading-tight capitalize">${dateStr}</p>
+                                <p class="text-[10px] text-app-muted font-bold">${timeStr}</p>
+                            </div>
+                            <div class="w-6 shrink-0 text-app-primary mr-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[14px] font-bold text-white mb-0.5">Сила (День ${planDay})</p>
+                                <p class="text-[12px] text-app-muted">${data.sets.join(' · ')} разів • ${data.total} всього</p>
+                            </div>
+                            <div class="w-6 shrink-0 text-right">
+                                ${i===0 ? `<div class="w-5 h-5 rounded-full bg-app-primary flex items-center justify-center text-black ml-auto"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>` : `<div class="w-5 h-5 rounded-full border-2 border-app-border ml-auto"></div>`}
+                            </div>
+                        </div>`;
+                } else {
+                    container.innerHTML += `
+                        <div class="flex items-center py-4 border-b border-white/5 opacity-50">
+                            <div class="w-20 shrink-0">
+                                <p class="text-[13px] font-bold text-white leading-tight capitalize">${dateStr}</p>
+                            </div>
+                            <div class="w-6 shrink-0 text-app-muted mr-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[14px] font-bold text-white mb-0.5">День відновлення</p>
+                                <p class="text-[12px] text-app-muted">Відпочинок та ріст</p>
+                            </div>
+                            <div class="w-6 shrink-0"></div>
+                        </div>`;
+                }
+            }
+        }
+
+        function updateProfile() {
+            document.getElementById('stat-record').innerText = appState.maxPushups;
+            document.getElementById('stat-goal').innerText = appState.goalPushups;
+            
+            const totalSum = appState.history.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('stat-total').innerText = totalSum;
+
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+            
+            if (appState.history.length === 0) {
+                container.innerHTML = `<p class="text-app-muted text-[13px] text-center py-6">Ти ще не завершив жодного тренування.</p>`;
+                return;
+            }
+
+            [...appState.history].reverse().slice(0, 10).forEach(entry => {
+                let statusColor = 'text-app-primary';
+                if(entry.rpe === 'hard') statusColor = 'text-app-red';
+
+                // Визначаємо напис "Сьогодні" або дату
+                const todayLocal = new Date().toLocaleDateString('uk-UA');
+                let displayDate = entry.dateStr === todayLocal ? "Сьогодні" : entry.date;
+
+                container.innerHTML += `
+                    <div class="flex items-center py-4 border-b border-white/5">
+                        <div class="w-10 h-10 rounded-xl bg-app-card border border-white/5 flex items-center justify-center mr-4 shrink-0">
+                            <svg class="w-5 h-5 ${statusColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-[14px] font-bold text-white mb-0.5">Тренування завершено</p>
+                            <p class="text-[12px] text-app-muted">${displayDate} • ${entry.sets.join(' · ')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[16px] font-black text-white">${entry.total}</p>
+                            <p class="text-[10px] text-app-muted uppercase font-bold">разів</p>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-app-primary');
+                btn.classList.add('text-app-muted');
+            });
+            document.getElementById(`nav-${tab}`).classList.remove('text-app-muted');
+            document.getElementById(`nav-${tab}`).classList.add('text-app-primary');
+            
+            showScreen(`view-${tab}`);
+        }
+
+        function startWorkout() {
+            const data = getDayData(appState.currentDay);
+            if(data.type === 'rest') {
+                appState.currentDay++;
+                saveState();
+                updateAllUI();
+                return;
+            }
+
+            currentSets = [...data.sets];
+            currentSetIdx = 0;
+            
+            document.getElementById('bottom-nav').style.transform = 'translateY(150%)';
+            showScreen('view-workout');
+            document.getElementById('workout-header-title').innerText = `ТРЕНУВАННЯ ${appState.currentDay}`;
+            
+            setupSetUI();
+        }
+
+        function cancelWorkout() {
+            clearInterval(restInterval);
+            document.getElementById('bottom-nav').style.transform = 'translateY(0)';
+            showScreen('view-dashboard');
+        }
+
+        function setupSetUI() {
+            document.getElementById('workout-rest').classList.add('hidden');
+            document.getElementById('workout-rest').classList.remove('flex');
+            document.getElementById('workout-do-set').classList.remove('hidden');
+            document.getElementById('workout-do-set').classList.add('flex');
+            
+            document.getElementById('workout-set-indicator').innerText = `ПІДХІД ${currentSetIdx + 1}/${currentSets.length}`;
+            actualReps = currentSets[currentSetIdx];
+            document.getElementById('workout-reps-target').innerText = actualReps;
+        }
+
+        function adjustWorkoutReps(val) {
+            actualReps += val;
+            if(actualReps < 0) actualReps = 0;
+            document.getElementById('workout-reps-target').innerText = actualReps;
+        }
+
+        function finishSet() {
+            currentSets[currentSetIdx] = actualReps; 
+            currentSetIdx++;
+            
+            if (currentSetIdx >= currentSets.length) {
+                finishWorkoutSession();
+            } else {
+                startRestTimer();
+            }
+        }
+
+        function startRestTimer() {
+            document.getElementById('workout-do-set').classList.add('hidden');
+            document.getElementById('workout-do-set').classList.remove('flex');
+            document.getElementById('workout-rest').classList.remove('hidden');
+            document.getElementById('workout-rest').classList.add('flex');
+            
+            document.getElementById('workout-next-preview').innerText = `${currentSets[currentSetIdx]}`;
+            
+            activeRestBase = appState.restTime;
+            restRemaining = activeRestBase;
+            updateRestDisplay();
+            
+            const ring = document.getElementById('rest-ring');
+            ring.style.transition = 'none';
+            ring.style.strokeDashoffset = '0';
+            setTimeout(() => { ring.style.transition = 'stroke-dashoffset 1s linear'; }, 50);
+
+            let endTime = Date.now() + restRemaining * 1000;
+            clearInterval(restInterval);
+            
+            restInterval = setInterval(() => {
+                restRemaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+                
+                const percent = 1 - (restRemaining / activeRestBase);
+                ring.style.strokeDashoffset = 691 * percent; 
+                
+                if (restRemaining <= 0) {
+                    clearInterval(restInterval);
+                    setupSetUI();
+                } else {
+                    updateRestDisplay();
+                }
+            }, 1000);
+        }
+
+        function updateRestDisplay() {
+            let m = Math.floor(restRemaining / 60);
+            let s = restRemaining % 60;
+            document.getElementById('workout-rest-time').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function addRestTime(sec) {
+            restRemaining += sec;
+            activeRestBase += sec;
+            updateRestDisplay();
+            const ring = document.getElementById('rest-ring');
+            ring.style.transition = 'stroke-dashoffset 0.5s ease';
+        }
+
+        function skipRest() {
+            clearInterval(restInterval);
+            setupSetUI();
+        }
+
+        function finishWorkoutSession() {
+            const total = currentSets.reduce((a,b)=>a+b,0);
+            document.getElementById('feedback-total-reps').innerText = total;
+            showScreen('view-feedback');
+        }
+
+        function submitFeedback(difficulty) {
+            const total = currentSets.reduce((a,b)=>a+b,0);
+            
+            // Зберігаємо дату в двох форматах для перевірки на "Сьогодні"
+            const dateObj = new Date();
+            const todayStrUI = dateObj.toLocaleDateString('uk-UA', { month: 'short', day: 'numeric' });
+            const todayStrLogic = dateObj.toLocaleDateString('uk-UA');
+            
+            appState.history.push({
+                date: todayStrUI,
+                dateStr: todayStrLogic,
+                type: 'workout',
+                total: total,
+                sets: [...currentSets],
+                rpe: difficulty 
+            });
+
+            if (difficulty === 'easy') {
+                appState.trainingMax = Math.min(appState.maxPushups, appState.trainingMax + 1);
+            } else if (difficulty === 'hard') {
+                appState.trainingMax = Math.max(1, appState.trainingMax - 1);
+            }
+
+            let maxInSet = Math.max(...currentSets);
+            if (maxInSet > appState.maxPushups) {
+                appState.maxPushups = maxInSet;
+            }
+
+            appState.currentDay++; 
+            saveState();
+            
+            document.getElementById('bottom-nav').style.transform = 'translateY(0)';
+            updateAllUI();
+            showScreen('view-dashboard');
+        }
+
+        function confirmReset() {
+            if(confirm('Ви впевнені? Всі ваші дані та прогрес будуть видалені.')) {
+                localStorage.removeItem('pushupProStateDark');
+                location.reload();
+            }
+        }
+
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
